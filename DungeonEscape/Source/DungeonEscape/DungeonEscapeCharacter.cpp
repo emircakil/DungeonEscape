@@ -9,6 +9,8 @@
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DungeonEscape.h"
+#include "CollectibleItem.h"
+#include "Lock.h"
 
 ADungeonEscapeCharacter::ADungeonEscapeCharacter()
 {
@@ -70,8 +72,65 @@ void ADungeonEscapeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 void ADungeonEscapeCharacter::Interact()
 {
-	UE_LOG(LogTemp, Display, TEXT("Interacted!"));
+	FVector start = FirstPersonCameraComponent->GetComponentLocation();
+	FVector end = start + (FirstPersonCameraComponent->GetForwardVector() * maxInteractionInstance);
+	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 5.0f);
+
+	FCollisionShape interactionSphere = FCollisionShape::MakeSphere(interactionShapeRadius);
+	DrawDebugSphere(GetWorld(), end, interactionShapeRadius, 12, FColor::Blue, false, 5.0f);
+
+	FHitResult hitResult;
+
+	bool hasHit = GetWorld()->SweepSingleByChannel(
+		hitResult,
+		start, end,
+		FQuat::Identity,
+		ECC_GameTraceChannel2,
+		interactionSphere
+	);
+
+	if (hasHit) {
+		AActor* hitActor = hitResult.GetActor();
+
+		if (hitActor->ActorHasTag("CollectibleItem")) {
+
+			UE_LOG(LogTemp, Display, TEXT("Collectible Item hitted!"));
+			ACollectibleItem* collectibleItem = Cast<ACollectibleItem>(hitActor);
+			if (collectibleItem) {
+				itemList.Add(collectibleItem->itemName);
+				collectibleItem->Destroy();
+			}
+
+		}
+		else if (hitActor->ActorHasTag("Lock")) {
+			UE_LOG(LogTemp, Display, TEXT("Lock item hitted!"));
+			ALock* lockItem = Cast<ALock>(hitActor);
+			if (lockItem) {
+				if (!lockItem->getIsKeyPlaced()) {
+					//Lock is empty
+					int32 itemsRemoved = itemList.RemoveSingle(lockItem->keyItemName);
+					if (itemsRemoved) {
+						
+						lockItem->setIsKeyPlaced(true);
+					}
+					else {
+						UE_LOG(LogTemp, Display, TEXT("Key item not in the inventory"));
+					}
+				}
+				else {
+					itemList.Add(lockItem->keyItemName);
+					lockItem->setIsKeyPlaced(false);
+				}
+			}
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Display, TEXT("There is no actor hitting"));
+	}
 }
+
+	//UE_LOG(LogTemp, Display, TEXT("Interacted!"));
+
 
 
 

@@ -55,6 +55,8 @@ protected:
 public:
 	ADungeonEscapeCharacter();
 
+	
+
 protected:
 
 	/** Called from Input Actions for movement input */
@@ -93,7 +95,19 @@ public:
 	/** Returns first person camera component **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+
 	void Interact();
+
+	UPROPERTY(EditAnywhere)
+	float maxInteractionInstance = 300.0f;
+
+	UPROPERTY(EditAnywhere)
+	float interactionShapeRadius = 30.0f;
+
+private:
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<FString> itemList;
 
 };
 
